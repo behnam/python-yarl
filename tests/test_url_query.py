@@ -90,12 +90,10 @@ def test_query_dont_unqoute_twice():
 # ========================================
 
 URLS_WITH_RESERVED_CHARS_IN_QUERY_VALUES = [
-
     # Ampersand
     (URL('http://127.0.0.1/?a=10&b=20'),   2, '10'),
     (URL('http://127.0.0.1/?a=10%26b=20'), 1, '10&b=20'),
     (URL('http://127.0.0.1/?a=10%3Bb=20'), 1, '10;b=20'),
-
     # Semicolon
     (URL('http://127.0.0.1/?a=10;b=20'),   2, '10'),
     (URL('http://127.0.0.1/?a=10%26b=20'), 1, '10&b=20'),
