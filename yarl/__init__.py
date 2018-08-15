@@ -817,7 +817,8 @@ class URL:
                         "should be str or int, got {!r} "
                         "of type {}".format(v, type(v)))
 
-    def _get_str_query(self, *args, **kwargs):
+    @classmethod
+    def _get_str_query(cls, *args, **kwargs):
         if kwargs:
             if len(args) > 0:
                 raise ValueError("Either kwargs or single query parameter "
@@ -832,17 +833,17 @@ class URL:
         if query is None:
             query = ''
         elif isinstance(query, Mapping):
-            quoter = self._QUERY_PART_QUOTER
-            query = '&'.join(quoter(k) + '=' + quoter(self._query_var(v))
+            quoter = cls._QUERY_PART_QUOTER
+            query = '&'.join(quoter(k) + '=' + quoter(cls._query_var(v))
                              for k, v in query.items())
         elif isinstance(query, str):
-            query = self._QUERY_QUOTER(query)
+            query = cls._QUERY_QUOTER(query)
         elif isinstance(query, (bytes, bytearray, memoryview)):
             raise TypeError("Invalid query type: bytes, bytearray and "
                             "memoryview are forbidden")
         elif isinstance(query, Sequence):
-            quoter = self._QUERY_PART_QUOTER
-            query = '&'.join(quoter(k) + '=' + quoter(self._query_var(v))
+            quoter = cls._QUERY_PART_QUOTER
+            query = '&'.join(quoter(k) + '=' + quoter(cls._query_var(v))
                              for k, v in query)
         else:
             raise TypeError("Invalid query type: only str, mapping or "
