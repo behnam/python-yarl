@@ -1,3 +1,4 @@
+import typing
 import warnings
 from collections.abc import Mapping, Sequence, ItemsView
 from ipaddress import ip_address
@@ -5,6 +6,7 @@ from urllib.parse import (SplitResult, parse_qsl,
                           urljoin, urlsplit, urlunsplit)
 
 from multidict import MultiDict, MultiDictProxy
+
 import idna
 
 
@@ -810,29 +812,36 @@ class URL:
     # == Query ==
 
     @staticmethod
-    def _query_var(v):
+    def _query_value_to_string(v: typing.Union[str, int]) -> str:
         if isinstance(v, str):
             return v
         if type(v) is int:  # no subclasses like bool
             return str(v)
-        raise TypeError("Invalid variable type: value "
-                        "should be str or int, got {!r} "
-                        "of type {}".format(v, type(v)))
+        raise TypeError(
+            "Invalid variable type: value should be str or int, "
+            "got {!r} of type {}".format(v, type(v))
+        )
 
-    @classmethod
-    def _get_str_query(cls, *args, **kwargs):
+    @staticmethod
+    def _get_query_object_from_args(*args, **kwargs):
+        """Return a dict, if kwargs is set; else, first element of args."""
         if kwargs:
             if len(args) > 0:
                 raise ValueError(
                     "Either kwargs or single query parameter must be present"
                 )
-            query = kwargs
-        elif len(args) == 1:
-            query = args[0]
-        else:
-            raise ValueError(
-                "Either kwargs or single query parameter must be present"
-            )
+            return kwargs
+
+        if len(args) == 1:
+            return args[0]
+
+        raise ValueError(
+            "Either kwargs or single query parameter must be present"
+        )
+
+    @classmethod
+    def _make_query_string(cls, query):
+        """Give a query value, returns the normalized string representation."""
 
         if query is None:
             return ''
@@ -847,12 +856,12 @@ class URL:
             )
 
         if isinstance(query, Mapping):
-            query = query.items()
+            query = query.items()  # type: ItemsView
 
         if isinstance(query, (Sequence, ItemsView)):
             return '&'.join(
                 cls._QUERY_PART_QUOTER(k) + '=' +
-                cls._QUERY_PART_QUOTER(cls._query_var(v))
+                cls._QUERY_PART_QUOTER(cls._query_value_to_string(v))
                 for k, v in query
             )
 
@@ -874,21 +883,30 @@ class URL:
         """
         # NOTE: doesn't cleanup fragment
 
-        new_query = self._get_str_query(*args, **kwargs)
+        new_query_string = self._make_query_string(
+            self._get_query_object_from_args(*args, **kwargs)
+        )
         return URL(
-            self._val._replace(path=self._val.path, query=new_query),
+            self._val._replace(path=self._val.path, query=new_query_string),
             encoded=True,
         )
 
     def update_query(self, *args, **kwargs):
         """Return a new URL with query part updated."""
-        s = self._get_str_query(*args, **kwargs)
-        new_query = MultiDict(parse_qsl(s, keep_blank_values=True))
+        new_query_string = self._make_query_string(
+            self._get_query_object_from_args(*args, **kwargs)
+        )
+        new_query = MultiDict(
+            parse_qsl(new_query_string, keep_blank_values=True)
+        )
         query = MultiDict(self.query)
         query.update(new_query)
+        query_string = self._make_query_string(query)
 
-        return URL(self._val._replace(query=self._get_str_query(query)),
-                   encoded=True)
+        return URL(
+            self._val._replace(query=query_string),
+            encoded=True,
+        )
 
     # == Fragment ==
 
