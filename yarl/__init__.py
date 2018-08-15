@@ -1,5 +1,5 @@
 import warnings
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping, Sequence, ItemsView
 from ipaddress import ip_address
 from urllib.parse import (SplitResult, parse_qsl,
                           urljoin, urlsplit, urlunsplit)
@@ -807,6 +807,8 @@ class URL:
         return URL(self._val._replace(path=path, query='', fragment=''),
                    encoded=True)
 
+    # == Query ==
+
     @staticmethod
     def _query_var(v):
         if isinstance(v, str):
@@ -821,43 +823,49 @@ class URL:
     def _get_str_query(cls, *args, **kwargs):
         if kwargs:
             if len(args) > 0:
-                raise ValueError("Either kwargs or single query parameter "
-                                 "must be present")
+                raise ValueError(
+                    "Either kwargs or single query parameter must be present"
+                )
             query = kwargs
         elif len(args) == 1:
             query = args[0]
         else:
-            raise ValueError("Either kwargs or single query parameter "
-                             "must be present")
+            raise ValueError(
+                "Either kwargs or single query parameter must be present"
+            )
 
         if query is None:
-            query = ''
-        elif isinstance(query, Mapping):
-            quoter = cls._QUERY_PART_QUOTER
-            query = '&'.join(quoter(k) + '=' + quoter(cls._query_var(v))
-                             for k, v in query.items())
-        elif isinstance(query, str):
-            query = cls._QUERY_QUOTER(query)
-        elif isinstance(query, (bytes, bytearray, memoryview)):
-            raise TypeError("Invalid query type: bytes, bytearray and "
-                            "memoryview are forbidden")
-        elif isinstance(query, Sequence):
-            quoter = cls._QUERY_PART_QUOTER
-            query = '&'.join(quoter(k) + '=' + quoter(cls._query_var(v))
-                             for k, v in query)
-        else:
-            raise TypeError("Invalid query type: only str, mapping or "
-                            "sequence of (str, str) pairs is allowed")
+            return ''
 
-        return query
+        if isinstance(query, str):
+            return cls._QUERY_QUOTER(query)
+
+        if isinstance(query, (bytes, bytearray, memoryview)):
+            raise TypeError(
+                "Invalid query type: bytes, bytearray and memoryview are "
+                "forbidden"
+            )
+
+        if isinstance(query, Mapping):
+            query = query.items()
+
+        if isinstance(query, (Sequence, ItemsView)):
+            return '&'.join(
+                cls._QUERY_PART_QUOTER(k) + '=' +
+                cls._QUERY_PART_QUOTER(cls._query_var(v))
+                for k, v in query
+            )
+
+        raise TypeError(
+            "Invalid query type: `" + str(type(query)) + "`. "
+            "only str, Mapping, Sequence of (str, str) pairs is allowed"
+        )
 
     def with_query(self, *args, **kwargs):
         """Return a new URL with query part replaced.
 
-        Accepts any Mapping (e.g. dict, multidict.MultiDict instances)
-        or str, autoencode the argument if needed.
-
-        A sequence of (key, value) pairs is supported as well.
+        Accepts any Mapping (e.g. dict, multidict.MultiDict instances),
+        Sequence of (key, value) pairs, or str.
 
         It also can take an arbitrary number of keyword arguments.
 
@@ -869,7 +877,8 @@ class URL:
         new_query = self._get_str_query(*args, **kwargs)
         return URL(
             self._val._replace(path=self._val.path, query=new_query),
-            encoded=True)
+            encoded=True,
+        )
 
     def update_query(self, *args, **kwargs):
         """Return a new URL with query part updated."""
@@ -880,6 +889,8 @@ class URL:
 
         return URL(self._val._replace(query=self._get_str_query(query)),
                    encoded=True)
+
+    # == Fragment ==
 
     def with_fragment(self, fragment):
         """Return a new URL with fragment replaced.
