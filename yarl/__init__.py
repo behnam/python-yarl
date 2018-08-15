@@ -684,7 +684,7 @@ class URL:
 
     def with_scheme(self, scheme):
         """Return a new URL with scheme replaced."""
-        # N.B. doesn't cleanup query/fragment
+        # NOTE: doesn't cleanup query/fragment
         if not isinstance(scheme, str):
             raise TypeError("Invalid scheme type")
         if not self.is_absolute():
@@ -700,7 +700,7 @@ class URL:
         Clear user/password if user is None.
 
         """
-        # N.B. doesn't cleanup query/fragment
+        # NOTE: doesn't cleanup query/fragment
         val = self._val
         if user is None:
             password = None
@@ -727,7 +727,7 @@ class URL:
         Clear password if argument is None.
 
         """
-        # N.B. doesn't cleanup query/fragment
+        # NOTE: doesn't cleanup query/fragment
         if password is None:
             pass
         elif isinstance(password, str):
@@ -756,7 +756,7 @@ class URL:
         instead.
 
         """
-        # N.B. doesn't cleanup query/fragment
+        # NOTE: doesn't cleanup query/fragment
         if not isinstance(host, str):
             raise TypeError("Invalid host type")
         if not self.is_absolute():
@@ -780,7 +780,7 @@ class URL:
         Clear port to default if None is passed.
 
         """
-        # N.B. doesn't cleanup query/fragment
+        # NOTE: doesn't cleanup query/fragment
         if port is not None and not isinstance(port, int):
             raise TypeError(
                 "port should be int or None, got {}".format(type(port)))
@@ -864,7 +864,7 @@ class URL:
         Clear query if None is passed.
 
         """
-        # N.B. doesn't cleanup query/fragment
+        # NOTE: doesn't cleanup fragment
 
         new_query = self._get_str_query(*args, **kwargs)
         return URL(
@@ -889,7 +889,7 @@ class URL:
         Clear fragment to default if None is passed.
 
         """
-        # N.B. doesn't cleanup query/fragment
+        # NOTE: doesn't cleanup query
         if fragment is None:
             fragment = ''
         elif not isinstance(fragment, str):
@@ -907,7 +907,7 @@ class URL:
         Name is encoded if needed.
 
         """
-        # N.B. DOES cleanup query/fragment
+        # NOTE: DOES cleanup query/fragment
         if not isinstance(name, str):
             raise TypeError("Invalid name type")
         if '/' in name:
